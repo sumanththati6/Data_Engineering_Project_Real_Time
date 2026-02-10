@@ -1,154 +1,201 @@
-<<<<<<< HEAD
-# Data_Engineering_Project_Real_Time
-This project delivers a full ETL pipeline for a truck logistics company to track revenue and performance. Using Terraform for GCP infrastructure, MAGE for orchestrated ETL, dbt for analytics in BigQuery, and Looker Studio for dashboards, it provides executives with clear, actionable insights.
-=======
-# Truck Logistics Data Pipeline 
+# Truck Logistics Data Pipeline
 
-## Data Engineering Zoom Camp | 2024 Cohort | Capstone Project 
+Author: **Sumanth**
 
-Author: [*Diego Gutierrez*](https://www.linkedin.com/in/diego-gutierrez-1874b17b/) 
+> **IMPORTANT:** _To skip the project overview and go straight to setup instructions, click [here](setup.md)_
 
-  >**IMPORTANT;** _to skip the project overview & head staight to set up, click [here](setup.md)_
+---
 
--------
+## Project Overview
 
+This is my **batch-oriented ETL data pipeline project** for a truck logistics company. The goal of this project is to consolidate operational trip data collected, transform it into analytics-ready models, and surface business insights through dashboards for executives and senior management.
+
+Unlike a real-time or streaming system, I intentionally designed this as a **scheduled batch pipeline**, reflecting how many logistics organizations actually operate—processing weekly or monthly data drops rather than continuous event streams.
+
+The pipeline provisions cloud infrastructure on Google Cloud Platform, orchestrates data ingestion and transformation, applies analytics modeling, and visualizes key performance and revenue metrics.
+
+---
 <img src="static/assets/trucks.jpeg" alt="Trucks" height="300" width="600">
+---
+## Table of Contents
 
------
+- [Problem Statement](#problem-statement)
+- [Tools & Technology](#tools--technology)
+- [Architecture Overview](#architecture-overview)
+- [Data Sources & Schema](#data-sources--schema)
+- [ETL Orchestration with Mage](#etl-orchestration-with-mage)
+- [Analytics Layer with dbt](#analytics-layer-with-dbt)
+- [Dashboard & Visualization](#dashboard--visualization)
+- [Future Improvements](#future-improvements)
+- [Acknowledgements](#acknowledgements)
 
-## Table of Contents:
+---
 
-* [Problem Statement](#problem-statement)
-* [Tools & Technology](#tools--technology)
-* [Architecture Diagram](#architecture-diagram)
-* [Data Sources & Schema](#data-sources--schema)
-* [Mage Orchestration](#mage-orchestration)
-* [Dashboard & Visualization](#dashboard--visualization)
-* [Further Ideas & Next Steps](#further-ideas--next-steps)
-* [Acknowledgements & Credits](#acknowledgements--credits)
+## Problem Statement
 
-    >**NOTE;** _to skip the project overview & head staight to set up, click [here](setup.md)_
+Truck logistics companies generate large volumes of operational data related to trips, drivers, customers, and distances traveled. When this data is stored in isolated files and processed manually, it becomes difficult for leadership to:
 
-------------------------
+- Understand revenue performance by customer and trip type
+- Track operational efficiency over time
+- Make informed, data-driven business decisions
 
-### Problem statement 
+I address these challenges by building a **reliable batch ETL pipeline** that:
 
-The necessity for developing a pipeline and dashboard for a truck logistics company stems from the imperative to efficiently collect, process, and disseminate critical information regarding transportation activities, especially revenue data from each customer. By establishing a comprehensive pipeline, which encompasses data acquisition, preprocessing, analysis, and visualization stages, alongside a user-friendly dashboard interface tailored for executives and senior management, the company can access accurate insights into revenue generation, cost analysis, and overall operational performance.
+- Ingests weekly trip data files
+- Applies consistent transformations and revenue calculations
+- Centralizes data in a cloud data warehouse
+- Enables analytics and visualization for business stakeholders
 
-This project is a full ETL (Extract, Transform, Load) pipeline designed to streamline and enhance the data processing capabilities of a truck logistics company. The project leverages several powerful technologies and tools to achieve its objectives:
+The result is a repeatable and scalable analytics workflow covering logistics activity from **July through January**.
 
-- Infrastructure Provisioning with Terraform: Terraform is used to create the necessary cloud infrastructure on Google Cloud Storage and BigQuery, ensuring a scalable and reliable environment for data processing and storage.
+---
 
-- Data Orchestration with MAGE: MAGE, an advanced data orchestrator, is employed to automate the ETL process. It downloads a CSV file from the local machine, transforms it into a Parquet file, and loads it into Google Cloud Storage and BigQuery. This entire process is containerized and runs inside Docker, providing consistency and ease of deployment.
+## Tools & Technology
 
-- Analytics with dbt: dbt (Data Build Tool) is used to perform analytics on the data stored in BigQuery. This enables the creation of meaningful data models and transformations that drive deeper insights into the logistics operations.
+- **Containerization:** Docker
+- **Workflow Orchestration:** Mage
+- **Infrastructure as Code:** Terraform
+- **Data Lake:** Google Cloud Storage
+- **Data Warehouse:** Google BigQuery
+- **Transformations & Analytics:** dbt (Data Build Tool)
+- **Visualization:** Looker Studio
 
-- Visualization with Looker Studio: Finally, Looker Studio is used to create interactive and user-friendly dashboards. These dashboards present key metrics and insights, enabling executives and senior management to make informed decisions based on real-time data.
+---
 
-______________________________________________
+## Architecture Overview
 
-### Tools & Technology
+The pipeline follows a classic **batch analytics architecture**:
 
-* Containerisation: [Docker](https://www.docker.com/)
-* Workflow Orchestration: [Mage](https://www.mage.ai/)
-* Data Transformations: [DBT DataBuildTools](https://www.getdbt.com/)
-* Data Lake: [Google Cloud Storage](https://cloud.google.com/storage/?hl=en)
-* Data Warehouse: [Google BigQuery](https://cloud.google.com/bigquery?hl=en)
-* Infrastructure as Code (IaC): [Terraform](https://www.terraform.io/) 
-* Visualisation: [Looker Studio](https://lookerstudio.google.com/)
-
-______________________________________________
-
-### Architecture Diagram
+1. **Local CSV ingestion** – Weekly trip data is delivered as CSV files
+2. **Transformation & format optimization** – Data is cleaned and converted to Parquet
+3. **Cloud storage** – Parquet files are stored in Google Cloud Storage
+4. **External tables** – BigQuery external tables reference the Parquet data
+5. **Analytics modeling** – dbt builds staging and core models in BigQuery
+6. **Visualization** – Looker Studio dashboards query analytics tables
 
 <img src="static/assets/data_architecture.drawio.svg" alt="Data Architecture" height="300" width="600">
 
-------------------------
+This architecture prioritizes simplicity, reproducibility, and cost efficiency over low-latency processing.
 
-### Data Sources & Schema
+---
 
-The project was inspired by a truck fleet company that has drivers working for different companies. The data was simulated to avoid using private data. The simulated data used in this project can be found in the 'data' and 'seed' directories. To generate similar data, you can run the Python script [`data_generator.py`](data/data_generator.py).
+## Data Sources & Schema
 
-There are basically 2 CSV files: one located in the local 'data' folder, which is supposedly updated every week with the week's rides, and a fixed table containing customer rates for each type of trip.
+All data used in this project is **synthetically generated** to avoid exposure of private or sensitive information. The data generation logic is included in the repository.
 
-1. trip_data: This CSV contains trip data for truck logistics. It includes the following columns:
+### Source Files
 
-* date: The date of the record.
-* driver: The name of the driver.
-* customer: The name of the customer.
-* hours: The number of hours for the trip.
-* km: The distance traveled in kilometers.
+There are two primary datasets:
 
-2. customer_rates: This CSV provides information about different rates for customers. It includes the following columns:
+### 1. `trip_data` (weekly batch files)
 
-* customer: The name of the customer.
-* hour_city: The hour rate for city trips.
-* hour_regular: The hour rate for regular trips.
-* hour_hy: The hour rate for highway trips.
-* fsc_city: The fuel surcharge rate for city travel.
-* fsc_regular: The fuel surcharge rate for regular travel.
-* fsc_hy: The fuel surcharge rate for highway travel.
-* hy_mileage: The highway mileage rate.
+Contains trip-level logistics data.
 
-______________________________________________
+**Columns:**
+- `date` – Date of the trip
+- `driver` – Driver name
+- `customer` – Customer name
+- `hours` – Hours worked on the trip
+- `km` – Distance traveled in kilometers
 
-### Mage Orchestration
+These files represent accumulated trips from **July to January**, updated on a regular batch schedule.
 
-<img src="static/assets/pipeline.png" alt="Pipeline" height="600" width="300">
+### 2. `customer_rates` (reference data)
 
-Mage operates within code blocks, and this pipeline utilizes Python, SQL, and DBT blocks in the following sequence:
+Contains pricing and fuel surcharge rules per customer.
 
-1. Load CSV file from local directory.
-2. Perform transformations and create a Parquet file.
-3. Export the Parquet file to Google Cloud Storage.
-4. Create an external table in BigQuery using the Parquet file from the Google Cloud Storage bucket.
-5. Install all dbt packages with dbt deps.
-6. Seed the customer_rates file into the DBT project.
-7. Create all DBT models.
-    - Create staging models for both files, with additional columns such as tripid and trip_type for trip_data.
-    - Create core model by joining both staging models and calculating revenue according to customer rules.
+**Columns:**
+- `customer`
+- `hour_city`
+- `hour_regular`
+- `hour_hy`
+- `fsc_city`
+- `fsc_regular`
+- `fsc_hy`
+- `hy_mileage`
 
------------------------------
+This dataset is treated as relatively static reference data and is seeded into dbt.
 
-### Dashboard & Visualization 
+---
 
-A dashboard has been developed using Google Looker Studio to visualise truck logistics events. Utilising Google's native visualisation tool from within BigQuery, the dashboard benefits from enhanced speed and reduced latency. This synergy between Looker and BigQuery allows for efficient data retrieval and processing, leading to faster insights and smoother user experiences.
+## ETL Orchestration with Mage
+
+I use Mage to orchestrate the **batch ETL workflow** using Python, SQL, and dbt blocks.
+
+### Pipeline Steps
+
+1. Load weekly CSV trip data from the local data directory
+2. Apply cleaning and enrichment logic
+3. Convert the dataset to Parquet format
+4. Upload Parquet files to Google Cloud Storage
+5. Create or refresh external tables in BigQuery
+6. Install dbt dependencies
+7. Seed reference data (`customer_rates`)
+8. Build staging and core analytics models
+
+   <img src="static/assets/pipeline.png" alt="Pipeline" height="600" width="300">
+
+
+The entire workflow runs inside Docker containers, ensuring consistent execution across environments.
+
+---
+
+## Analytics Layer with dbt
+
+I use dbt to transform raw logistics data into analytics-ready models.
+
+### Model Structure
+
+- **Staging models**
+  - Clean column names
+  - Add surrogate keys (e.g. `trip_id`)
+  - Derive trip types (city, regular, highway)
+
+- **Core model**
+  - Join trip data with customer rate rules
+  - Calculate revenue metrics based on hours, mileage, and fuel surcharges
+  - Produce a single fact table optimized for reporting
+
+This layered approach improves data quality, testability, and maintainability.
+
+---
+
+## Dashboard & Visualization
+
+I built a Looker Studio dashboard directly on top of BigQuery analytics tables.
+
+The dashboard enables stakeholders to explore:
+
+- Revenue by customer
+- Revenue by trip type
+- Driver activity and utilization
+- Time-based performance trends (July–January)
+
+By using Looker Studio with BigQuery as the source, the solution achieves fast query performance without the complexity of a real-time system.
 
 Dashboard Link: [HERE](https://lookerstudio.google.com/s/pBt7UHZBg1k)
 
 <img src="static/assets/dashboard.png" alt="Chart1" height="300" width="600">
 
+---
 
------------------------------
+## Future Improvements
 
-### Further Ideas & Next Steps
+- Increase historical data volume for longer-term trend analysis
+- Partition and cluster BigQuery tables for improved performance
+- Version customer rate tables by year
+- Introduce data quality tests and freshness checks
+- Explore incremental dbt models for larger batch workloads
 
-- Use a larger dataset
-- Create customer_rates files separated by year
-- With more data it would be possible to use tools such as dlt
-- Use partitions and clustering
+---
 
------------------------------
+## Project Ownership
 
-### Acknowledgements & Credits
+This project was **independently designed, developed, and delivered** as an **ongoing project**.
 
-Acknowledgement to [DataTalksClub](https://datatalks.club/)! for mentoring us through the Data Engineering Zoom Camp over the last 10 weeks. It has been a privilege to take part in the Spring '24 Cohort, go and check them out!
- 
-> "DataTalks.Club - the place to talk about data! We are a community of people who are passionate about data. Join us to talk about everything related to data, to learn more about applied machine learning with our free courses and materials, to discuss the engineering aspects of data science and analytics, to chat about career options and learn tips and tricks for the job interviews, to discover new things and have fun!
+All aspects of the work—including architecture design, infrastructure provisioning, data modeling, orchestration, analytics, and visualization—were completed as a solo effort, without external contributors or third‑party development assistance.
 
-> Our weekly events include:
+This project reflects my end‑to‑end understanding of batch data engineering systems and my ability to independently design, build, and continuously improve a production‑style analytics pipeline.
 
-> 👨🏼‍💻 Free courses and weekly study groups where you can start practicing within a friendly community of learners
+---
 
-> 🔧 Workshops where you can get hands-on tutorials about technical topics
-
-> ⚙️ Open-Source Spotlight, where you can discover open-source tools with a short demo video
-
-> 🎙 Live Podcasts with practitioners where they share their experience (and the recordings too)
-
-> 📺 Webinars with slides, where we discuss technical aspects of data science"
-
-[Data Talks Club](https://www.linkedin.com/company/datatalks-club/)
-
----------------------------
->>>>>>> 0ddd028 (Initial commit)
